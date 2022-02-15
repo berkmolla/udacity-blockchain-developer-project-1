@@ -76,6 +76,7 @@ class Blockchain {
                 }
                 self.chain.push(block);
                 self.height += 1;
+                self.validateChain();
                 resolve(block);
                 
             } catch (error) {
@@ -121,12 +122,18 @@ class Blockchain {
         return new Promise(async (resolve, reject) => {
             let time = parseInt(message.split(':')[1])
             let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
+            console.log(time)
+            console.log(currentTime)
 
-            if ((currentTime - time) > (300000)) {
+            if ((currentTime - time) > (300)) {
                 reject("Message is too old")
             }
 
-            bitcoinMessage.verify(message, address, signature)
+            try {
+                bitcoinMessage.verify(message, address, signature)
+            } catch (error) {
+                reject("Invalid message!")
+            }
             let block = new BlockClass.Block({data: star, owner: address});
             block = await self._addBlock(block);
             resolve(block);
@@ -209,7 +216,7 @@ class Blockchain {
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
             let previousBlockHash = -1;
-            self.chain.forEach((block, index) => {
+            for (const [index, block] of self.chain.entries()) {
                 try {
                     if (index !== 0) {
                         previousBlockHash = self.chain[index - 1].hash;
@@ -217,12 +224,11 @@ class Blockchain {
                             errorLog.push({'index': index, 'error': 'Block previous hash does not match previous block hash'})
                         }
                     }
-                    block.validate()                    
+                    let isValid = await block.validate();
                 } catch (error) {
                     errorLog.push({'index': index, 'error': error})
                 }
-            });
-
+            }
             resolve(errorLog);
             
         });
