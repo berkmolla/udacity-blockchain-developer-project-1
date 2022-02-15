@@ -76,7 +76,10 @@ class Blockchain {
                 }
                 self.chain.push(block);
                 self.height += 1;
-                self.validateChain();
+                let errors = await self.validateChain();
+                if (errors && errors.length > 0) {
+                    reject(errors)
+                }
                 resolve(block);
                 
             } catch (error) {
@@ -169,7 +172,7 @@ class Blockchain {
     getBlockByHeight(height) {
         let self = this;
         return new Promise((resolve, reject) => {
-            let block = self.chain.filter(p => p.height === height)[0];
+            let block = self.chain.find(p => p.height === height);
             if(block){
                 resolve(block);
             } else {
